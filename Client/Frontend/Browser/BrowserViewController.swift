@@ -1062,7 +1062,11 @@ class BrowserViewController: UIViewController {
     }
 
     override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
-        guard let webView = object as? WKWebView, let tab = tabManager[webView], let kp = keyPath, let path = KVOConstants(rawValue: kp) else {
+        guard let webView = object as? WKWebView, let tab = tabManager[webView] else {
+            return
+        }
+        
+        guard let kp = keyPath, let path = KVOConstants(rawValue: kp) else {
             assertionFailure("Unhandled KVO key: \(keyPath ?? "nil")")
             return
         }
