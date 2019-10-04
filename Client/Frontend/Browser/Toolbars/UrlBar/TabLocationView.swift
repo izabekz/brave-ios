@@ -208,9 +208,7 @@ class TabLocationView: UIView {
         var optionSubviews = [readerModeButton, reloadButton, separatorLine, shieldsButton]
         separatorLine.isUserInteractionEnabled = false
         
-        #if !NO_REWARDS
         optionSubviews.append(rewardsButton)
-        #endif
         
         let buttonContentEdgeInsets = UIEdgeInsets(top: 0, left: 5, bottom: 0, right: 5)
         optionSubviews.forEach {
@@ -255,9 +253,7 @@ class TabLocationView: UIView {
     }
     
     @objc private func privateBrowsingModeChanged() {
-        #if !NO_REWARDS
         rewardsButton.isHidden = PrivateBrowsingManager.shared.isPrivateBrowsing
-        #endif
     }
 
     required init(coder: NSCoder) {

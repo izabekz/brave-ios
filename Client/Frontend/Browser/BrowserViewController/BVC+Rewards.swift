@@ -53,10 +53,10 @@ extension RewardsPanelController: PopoverContentComponent {
 extension BrowserViewController {
     func updateRewardsButtonState() {
         if !isViewLoaded { return }
-        self.topToolbar.locationView.rewardsButton.isHidden = self.rewards?.ledger.isEnabled == false && Preferences.Rewards.hideRewardsIcon.value
+        self.topToolbar.locationView.rewardsButton.isHidden = self.rewards.ledger.isEnabled == false && Preferences.Rewards.hideRewardsIcon.value
         let isVerifiedBadgeVisible = self.publisher?.status == .verified || self.publisher?.status == .connected
         self.topToolbar.locationView.rewardsButton.isVerified = isVerifiedBadgeVisible
-        self.topToolbar.locationView.rewardsButton.notificationCount = self.rewards?.ledger.notifications.count ?? 0
+        self.topToolbar.locationView.rewardsButton.notificationCount = self.rewards.ledger.notifications.count ?? 0
     }
 
     func showBraveRewardsPanel() {
@@ -65,7 +65,7 @@ extension BrowserViewController {
             UIDevice.current.setValue(value, forKey: "orientation")
         }
         
-        guard let tab = tabManager.selectedTab, let url = tab.webView?.url, let rewards = rewards else { return }
+        guard let tab = tabManager.selectedTab, let url = tab.webView?.url else { return }
         let braveRewardsPanel = RewardsPanelController(
             rewards,
             tabId: UInt64(tab.rewardsId),
@@ -80,9 +80,9 @@ extension BrowserViewController {
         popover.present(from: topToolbar.locationView.rewardsButton, on: self)
         popover.popoverDidDismiss = { [weak self] _ in
             guard let self = self else { return }
-            if let tabId = self.tabManager.selectedTab?.rewardsId, self.rewards?.ledger.selectedTabId == 0 {
+            if let tabId = self.tabManager.selectedTab?.rewardsId, self.rewards.ledger.selectedTabId == 0 {
                 // Show the tab currently visible
-                self.rewards?.ledger.selectedTabId = tabId
+                self.rewards.ledger.selectedTabId = tabId
             }
             self.displayMyFirstAdIfAvailable()
         }

@@ -219,14 +219,12 @@ class SettingsViewController: TableViewController {
             BoolRow(title: Strings.Show_Bookmark_Button_In_Top_Toolbar, option: Preferences.General.showBookmarkToolbarShortcut)
         )
         
-        #if !NO_REWARDS
         display.rows.append({
             var row = BoolRow(title: Strings.HideRewardsIcon, option: Preferences.Rewards.hideRewardsIcon)
             row.detailText = Strings.HideRewardsIconSubtitle
             row.cellClass = MultilineSubtitleCell.self
             return row
         }())
-        #endif
         
         return display
     }()
