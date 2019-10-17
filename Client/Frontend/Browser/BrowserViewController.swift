@@ -892,6 +892,7 @@ class BrowserViewController: UIViewController {
         alertStackView.snp.remakeConstraints { make in
             make.centerX.equalTo(self.view)
             make.width.equalTo(self.view.snp.width)
+            make.height.equalTo(UIConstants.ToolbarHeight)
             if let keyboardHeight = keyboardState?.intersectionHeightForView(self.view), keyboardHeight > 0 {
                 make.bottom.equalTo(self.view).offset(-keyboardHeight)
             } else {
@@ -1398,8 +1399,7 @@ class BrowserViewController: UIViewController {
                 findInPageBar.applyTheme(Theme.of(tabManager.selectedTab))
 
                 findInPageBar.snp.makeConstraints { make in
-                    make.height.equalTo(UIConstants.ToolbarHeight)
-                    make.leading.trailing.equalTo(alertStackView)
+                    make.edges.equalTo(alertStackView)
                 }
 
                 updateViewConstraints()
