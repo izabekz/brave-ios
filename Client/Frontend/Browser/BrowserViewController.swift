@@ -465,6 +465,7 @@ class BrowserViewController: UIViewController {
         header = UIStackView().then {
             $0.axis = .vertical
             $0.clipsToBounds = true
+            $0.translatesAutoresizingMaskIntoConstraints = false
         }
         header.addArrangedSubview(topToolbar)
         
@@ -503,6 +504,7 @@ class BrowserViewController: UIViewController {
 
         view.addSubview(alertStackView)
         footer = UIView()
+        footer.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(footer)
         alertStackView.axis = .vertical
         alertStackView.alignment = .center
@@ -598,6 +600,17 @@ class BrowserViewController: UIViewController {
 
         webViewContainerBackdrop.snp.makeConstraints { make in
             make.edges.equalTo(webViewContainer)
+        }
+        
+        topTouchArea.snp.makeConstraints { make in
+            make.top.left.right.equalTo(self.view)
+            make.height.equalTo(BrowserViewControllerUX.ShowHeaderTapAreaHeight)
+        }
+
+        readerModeBar?.snp.makeConstraints { make in
+            make.top.equalTo(self.header.snp.bottom)
+            make.height.equalTo(UIConstants.ToolbarHeight)
+            make.leading.trailing.equalTo(self.view)
         }
     }
 
@@ -842,19 +855,6 @@ class BrowserViewController: UIViewController {
     }
 
     override func updateViewConstraints() {
-        super.updateViewConstraints()
-
-        topTouchArea.snp.remakeConstraints { make in
-            make.top.left.right.equalTo(self.view)
-            make.height.equalTo(BrowserViewControllerUX.ShowHeaderTapAreaHeight)
-        }
-
-        readerModeBar?.snp.remakeConstraints { make in
-            make.top.equalTo(self.header.snp.bottom)
-            make.height.equalTo(UIConstants.ToolbarHeight)
-            make.leading.trailing.equalTo(self.view)
-        }
-
         webViewContainer.snp.remakeConstraints { make in
             make.left.right.equalTo(self.view)
             
@@ -871,13 +871,6 @@ class BrowserViewController: UIViewController {
             make.height.equalTo(height)
         }
         
-        // Setup the bottom toolbar
-        toolbar?.snp.remakeConstraints { make in
-            make.edges.equalTo(self.footer)
-        }
-
-        topToolbar.setNeedsUpdateConstraints()
-
         // Remake constraints even if we're already showing the home controller.
         // The home controller may change sizes if we tap the URL bar while on about:home.
         favoritesViewController?.view.snp.remakeConstraints { make in
@@ -897,6 +890,13 @@ class BrowserViewController: UIViewController {
                 make.bottom.equalTo(self.footer.snp.top)
             }
         }
+        
+        // Setup the bottom toolbar
+        toolbar?.snp.remakeConstraints { make in
+            make.edges.equalTo(self.footer)
+        }
+        
+        super.updateViewConstraints()
     }
 
     fileprivate func showHomePanelController(inline: Bool) {
