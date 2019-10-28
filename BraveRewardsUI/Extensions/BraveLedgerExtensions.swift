@@ -117,6 +117,26 @@ extension BraveLedger {
       })
     }
   }
+  
+  public func claimPromotion(_ promotion: Promotion, completion: @escaping (_ success: Bool) -> Void) {
+    // TODO: DeviceCheck public key goes here
+    claimPromotion("") { [weak self] (result, noonce) in
+      guard let self = self else { return }
+      if result != .ledgerOk {
+        // Show error?
+        completion(false)
+        return
+      }
+      
+      let solution = PromotionSolution()
+      solution.noonce = noonce
+      // TODO: DeviceCheck sig + blob added here to the solution
+      
+      self.attestPromotion(promotion.id, solution: solution) { promotion in
+        completion(promotion != nil)
+      }
+    }
+  }
 }
 
 extension PublisherInfo {
