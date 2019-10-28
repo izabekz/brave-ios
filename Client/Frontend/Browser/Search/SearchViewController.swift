@@ -490,7 +490,7 @@ class SearchViewController: SiteTableViewController, KeyboardHelperDelegate, Loa
         case .searchSuggestions:
             return searchEngines.shouldShowSearchSuggestions && !searchQuery.looksLikeAURL() && !tabType.isPrivate ? 1 : 0
         case .bookmarksAndHistory:
-            return data.count
+            return min(data.count, 5)
         case .findInPage:
             if let sd = searchDelegate, sd.searchViewControllerAllowFindInPage() {
                 return 1
