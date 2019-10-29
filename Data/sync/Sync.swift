@@ -693,7 +693,11 @@ extension Sync: WKScriptMessageHandler {
             self.resolvedSyncRecords(syncResponse)
         case "sync-debug":
             let data = message.body as? String ?? "{}"
-            log.debug("---- Sync Debug: \(data)")
+            if let data = data.data(using: .utf8), let json = try? JSONSerialization.jsonObject(with: data, options: .mutableLeaves) {
+                log.debug("---- Sync Debug: \(json)")
+            } else {
+                log.debug("---- Sync Debug: \(data)")
+            }
         case "sync-ready":
             self.isSyncFullyInitialized.syncReady = true
         case "fetch-sync-records":
