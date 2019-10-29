@@ -30,7 +30,7 @@ public struct RemoteClient: Equatable {
         self.type = json["type"].string
 
         self.version = json["version"].string
-        self.protocols = jsonsToStrings(json["protocols"].array)
+        self.protocols = json["protocols"].array?.compactMap({ $0.stringValue })
         self.os = json["os"].string
         self.appPackage = json["appPackage"].string
         self.application = json["application"].string

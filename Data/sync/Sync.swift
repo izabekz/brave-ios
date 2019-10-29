@@ -6,7 +6,6 @@ import Shared
 import BraveShared
 import CoreData
 import SwiftKeychainWrapper
-import SwiftyJSON
 import JavaScriptCore
 
 private let log = Logger.braveSyncLogger
@@ -601,11 +600,17 @@ extension Sync {
     }
     
     // Only called when the server has info for client to save
-    func saveInitData(_ data: JSON) {
+    func saveInitData(_ data: String) {
+        guard let data = data.data(using: .utf8) else {
+            return
+        }
+        
+        guard let jsonData = try? JSONSerialization.jsonObject(with: data, options: .mutableLeaves) as? [String: Any] else {
+            return
+        }
+        
         // Sync Seed
-        if let seedJSON = data["arg1"].array {
-            let seed = seedJSON.compactMap({ $0.int })
-            
+        if let seed = jsonData["arg1"] as? [Int] {
             // TODO: Move to constant
             if seed.count < Sync.SeedByteLength {
                 // Error
@@ -620,7 +625,7 @@ extension Sync {
         }
         
         // Device Id
-        if let deviceArray = data["arg2"].array, deviceArray.count > 0 {
+        if let deviceArray = jsonData["arg2"] as? [NSNumber], deviceArray.count > 0 {
             // TODO: Just don't set, if bad, allow sync to recover on next init
             Device.currentDevice()?.deviceId = deviceArray.map { $0.intValue }
             DataController.save(context: Device.currentDevice()?.managedObjectContext)
@@ -676,7 +681,7 @@ extension Sync: WKScriptMessageHandler {
         case "save-init-data" :
             // A bit hacky, but this method's data is not very uniform
             // (e.g. arg2 is [Int])
-            let data = JSON(parseJSON: message.body as? String ?? "")
+            let data = message.body as? String ?? "{}"
             self.saveInitData(data)
             // We clear current sync order after joining a new sync group.
             // syncOrder algorithm is also used for local ordering, even if we are not connected to sync group.
@@ -687,7 +692,7 @@ extension Sync: WKScriptMessageHandler {
         case "resolved-sync-records":
             self.resolvedSyncRecords(syncResponse)
         case "sync-debug":
-            let data = JSON(parseJSON: message.body as? String ?? "")
+            let data = message.body as? String ?? "{}"
             log.debug("---- Sync Debug: \(data)")
         case "sync-ready":
             self.isSyncFullyInitialized.syncReady = true

@@ -3,7 +3,6 @@
 import Foundation
 import SafariServices
 import Shared
-import SwiftyJSON
 
 private let log = Logger.browserLogger
 
@@ -49,9 +48,15 @@ struct UrpService {
                 log.debug("Referral code lookup response: \(data)")
                 UrpLog.log("Referral code lookup response: \(data)")
                 
-                let json = JSON(data)
-                let referral = ReferralData(json: json)
-                completion(referral, nil)
+                do {
+                    let referral = try JSONDecoder().decode(ReferralData.self, from: data)
+                    completion(referral, nil)
+                } catch {
+                    log.error("Unable to deserialize ReferralData from json: \(error)")
+                    UrpLog.log("Error: Unable to deserialize ReferralData from json: \(error)")
+                    
+                    completion(nil, .endpointError)
+                }
                 
             case .failure(let error):
                 log.error("Referral code lookup response: \(error)")
@@ -78,8 +83,14 @@ struct UrpService {
             switch response {
             case .success(let data):
                 log.debug("Check if authorized for grant response: \(data)")
-                let json = JSON(data)
-                completion(json["finalized"].boolValue, nil)
+                do {
+                    let json = try JSONSerialization.jsonObject(with: data, options: .mutableLeaves) as? [String: Any]
+                    
+                    completion(json?["finalized"] as? Bool ?? false, nil)
+                } catch {
+                    log.error("Check if authorized for grant response: \(error)")
+                    completion(nil, .endpointError)
+                }
                 
             case .failure(let error):
                 log.error("Check if authorized for grant response: \(error)")
@@ -100,8 +111,7 @@ struct UrpService {
         sessionManager.request(endPoint, parameters: params) { response in
             switch response {
             case .success(let data):
-                let json = JSON(data)
-                let customHeaders = CustomHeaderData.customHeaders(from: json)
+                let customHeaders = CustomHeaderData.customHeaders(from: data)
                 completion(customHeaders, nil)
             case .failure(let error):
                 log.error(error)
@@ -113,7 +123,7 @@ struct UrpService {
 
 extension URLSession {
     /// All requests to referral api use PUT method, accept and receive json.
-    func urpApiRequest(endPoint: URL, params: [String: String], completion: @escaping (Result<Any, Error>) -> Void) {
+    func urpApiRequest(endPoint: URL, params: [String: String], completion: @escaping (Result<Data, Error>) -> Void) {
         
         self.request(endPoint, method: .put, parameters: params, encoding: .json) { response in
             completion(response)
