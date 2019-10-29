@@ -54,7 +54,7 @@ public enum SyncRecordType: String {
     }
 }
 
-public enum SyncObjectDataType: String {
+public enum SyncObjectDataType: String, Codable, CodingKey {
     case Bookmark = "bookmark"
     case Prefs = "preference" // Remove
     

@@ -3,7 +3,6 @@
 import Foundation
 import Shared
 import CoreData
-import SwiftyJSON
 
 private let log = Logger.browserLogger
 
@@ -13,15 +12,15 @@ protocol SyncRecordProtocol {
     
 }
 
-public class SyncRecord: SyncRecordProtocol {
+public class SyncRecord: SyncRecordProtocol, Codable {
     
     // MARK: Declaration for string constants to be used to decode and also serialize.
-    fileprivate struct SerializationKeys {
-        static let objectId = "objectId"
-        static let deviceId = "deviceId"
-        static let action = "action"
-        static let objectData = "objectData"
-        static let syncTimestamp = "syncTimestamp"
+    private enum SerializationKeys: String, CodingKey {
+        case objectId
+        case deviceId
+        case action
+        case objectData
+        case syncTimestamp
     }
     
     // MARK: Properties
@@ -35,8 +34,8 @@ public class SyncRecord: SyncRecordProtocol {
 //    var CoredataParallel: Syncable.Type?
     typealias CoreDataParallel = Device
     
-    convenience init() {
-        self.init(json: nil)
+    required init() {
+        
     }
     
     /// Converts server format for storing timestamp(integer) to Date
@@ -44,14 +43,6 @@ public class SyncRecord: SyncRecordProtocol {
         guard let syncTimestamp = syncTimestamp else { return nil }
         
         return Date.fromTimestamp(Timestamp(syncTimestamp))
-    }
-    
-    /// Initiates the instance based on the object.
-    ///
-    /// - parameter object: The object of either Dictionary or Array kind that was passed.
-    /// - returns: An initialized instance of the class.
-    convenience init(object: [String: AnyObject]) {
-        self.init(json: JSON(object))
     }
     
     // Would be nice to make this type specific to class
@@ -73,44 +64,52 @@ public class SyncRecord: SyncRecordProtocol {
         syncTimestamp = Int(timeStamp)
     }
     
-    /// Initiates the instance based on the JSON that was passed.
-    ///
-    /// - parameter json: JSON object from SwiftyJSON.
-    required public init(json: JSON?) {
+    required public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: SerializationKeys.self)
+        
         // objectId can come in two different formats
-        if let items = json?[SerializationKeys.objectId].array { objectId = items.map { $0.intValue } }
-        if let items = json?[SerializationKeys.deviceId].array { deviceId = items.map { $0.intValue } }
-        action = json?[SerializationKeys.action].int
-        if let item = json?[SerializationKeys.objectData].string { objectData = SyncObjectDataType(rawValue: item) }
-        self.syncTimestamp = json?[SerializationKeys.syncTimestamp].int
+        var objectId: [Int]? = try? container.decodeIfPresent([Int].self, forKey: .objectId)
+        if objectId == nil {
+            objectId = (try? container.decodeIfPresent([String].self, forKey: .objectId))?.compactMap { Int($0) }
+        }
+        self.objectId = objectId
+        
+        deviceId = try container.decodeIfPresent([Int].self, forKey: .deviceId)
+        action = try container.decodeIfPresent(Int.self, forKey: .action)
+        objectData = try container.decodeIfPresent(SyncObjectDataType.self, forKey: .objectData)
+        syncTimestamp = try container.decodeIfPresent(Int.self, forKey: .syncTimestamp)
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: SerializationKeys.self)
+        try container.encodeIfPresent(objectId, forKey: .objectId)
+        try container.encodeIfPresent(deviceId, forKey: .deviceId)
+        try container.encodeIfPresent(action, forKey: .action)
+        try container.encodeIfPresent(objectData, forKey: .objectData)
+        try container.encodeIfPresent(syncTimestamp, forKey: .syncTimestamp)
     }
     
     /// Generates description of the object in the form of a NSDictionary.
     ///
     /// - returns: A Key value pair containing all valid values in the object.
     func dictionaryRepresentation() -> [String: Any] {
-        var dictionary: [String: Any] = [:]
-        // Override to use string value instead of array, to be uniform to CD
-        if let value = objectId { dictionary[SerializationKeys.objectId] = value }
-        if let value = deviceId { dictionary[SerializationKeys.deviceId] = value }
-        if let value = action { dictionary[SerializationKeys.action] = value }
-        if let value = objectData { dictionary[SerializationKeys.objectData] = value.rawValue }
-        if let value = syncTimestamp { dictionary[SerializationKeys.syncTimestamp] = value }
-        return dictionary
+        let result = (try? JSONSerialization.jsonObject(with: JSONEncoder().encode(self), options: .allowFragments)) as? [String: Any]
+        return result ??  [:]
     }
 }
 
 // Uses same mappings above, but for arrays
 extension SyncRecordProtocol where Self: SyncRecord {
     
-    static func syncRecords(_ rootJSON: [JSON]?) -> [Self]? {
+    static func syncRecords(_ rootJSON: [[String: Any]]?) -> [Self]? {
         return rootJSON?.map {
-            return self.init(json: $0)
+            let data = (try? JSONSerialization.data(withJSONObject: $0, options: JSONSerialization.WritingOptions(rawValue: 0))) ?? Data()
+            return (try? JSONDecoder().decode(Self.self, from: data)) ?? self.init()
         }
     }
     
-    static func syncRecords(_ rootJSON: JSON) -> [Self]? {
-        return self.syncRecords(rootJSON.array)
+    static func syncRecords(_ rootJSON: [String: Any]) -> [Self]? {
+        return self.syncRecords([rootJSON])
     }
 }
 

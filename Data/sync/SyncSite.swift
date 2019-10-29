@@ -2,18 +2,17 @@
 
 import Foundation
 import Shared
-import SwiftyJSON
 
-public final class SyncSite {
+public final class SyncSite: Codable {
     
     // MARK: Declaration for string constants to be used to decode and also serialize.
-    fileprivate struct SerializationKeys {
-        static let customTitle = "customTitle"
-        static let title = "title"
-        static let favicon = "favicon"
-        static let location = "location"
-        static let creationTime = "creationTime"
-        static let lastAccessedTime = "lastAccessedTime"
+    private enum SerializationKeys: String, CodingKey {
+        case customTitle
+        case title
+        case favicon
+        case location
+        case creationTime
+        case lastAccessedTime
     }
     
     // MARK: Properties
@@ -32,42 +31,35 @@ public final class SyncSite {
         return Date.fromTimestamp(Timestamp(lastAccessedTime ?? 0))
     }
     
-    public convenience init() {
-        self.init(json: nil)
+    public init() {
+    }
+
+    public required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: SerializationKeys.self)
+        customTitle = try container.decodeIfPresent(String.self, forKey: .customTitle)
+        title = try container.decodeIfPresent(String.self, forKey: .title)
+        favicon = try container.decodeIfPresent(String.self, forKey: .favicon)
+        location = try container.decodeIfPresent(String.self, forKey: .location)
+        creationTime = try container.decodeIfPresent(Int.self, forKey: .creationTime)
+        lastAccessedTime = try container.decodeIfPresent(Int.self, forKey: .lastAccessedTime)
     }
     
-    /// Initiates the instance based on the object.
-    ///
-    /// - parameter object: The object of either Dictionary or Array kind that was passed.
-    /// - returns: An initialized instance of the class.
-    public convenience init(object: [String: AnyObject]) {
-        self.init(json: JSON(object))
-    }
-    
-    /// Initiates the instance based on the JSON that was passed.
-    ///
-    /// - parameter json: JSON object from SwiftyJSON.
-    public required init(json: JSON?) {
-        customTitle = json?[SerializationKeys.customTitle].string
-        title = json?[SerializationKeys.title].string
-        favicon = json?[SerializationKeys.favicon].string
-        location = json?[SerializationKeys.location].string
-        creationTime = json?[SerializationKeys.creationTime].int
-        lastAccessedTime = json?[SerializationKeys.lastAccessedTime].int
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: SerializationKeys.self)
+        try container.encodeIfPresent(customTitle, forKey: .customTitle)
+        try container.encodeIfPresent(title, forKey: .title)
+        try container.encodeIfPresent(favicon, forKey: .favicon)
+        try container.encodeIfPresent(location, forKey: .location)
+        try container.encodeIfPresent(creationTime, forKey: .creationTime)
+        try container.encodeIfPresent(lastAccessedTime, forKey: .lastAccessedTime)
     }
     
     /// Generates description of the object in the form of a NSDictionary.
     ///
     /// - returns: A Key value pair containing all valid values in the object.
     public func dictionaryRepresentation() -> [String: AnyObject] {
-        var dictionary: [String: AnyObject] = [:]
-        if let value = customTitle { dictionary[SerializationKeys.customTitle] = value as AnyObject }
-        if let value = title { dictionary[SerializationKeys.title] = value as AnyObject }
-        if let value = favicon { dictionary[SerializationKeys.favicon] = value as AnyObject }
-        if let value = location { dictionary[SerializationKeys.location] = value as AnyObject }
-        if let value = creationTime { dictionary[SerializationKeys.creationTime] = value as AnyObject }
-        if let value = lastAccessedTime { dictionary[SerializationKeys.lastAccessedTime] = value as AnyObject }
-        return dictionary
+        let result = (try? JSONSerialization.jsonObject(with: JSONEncoder().encode(self), options: .allowFragments)) as? [String: Any]
+        return result?.compactMapValues({ $0 as AnyObject? }) ?? [:]
     }
     
 }

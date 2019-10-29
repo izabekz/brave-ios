@@ -15,7 +15,8 @@ private let queue = DispatchQueue(label: "FaviconFetcher", attributes: DispatchQ
 
 private struct TopSite: Decodable {
     let title: String
-    let url: String
+    let url: String?
+    let urls: [String]?
     let imageUrl: String
     let backgroundColor: UIColor
     let domain: String
@@ -23,7 +24,8 @@ private struct TopSite: Decodable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         title = try container.decode(String.self, forKey: .title)
-        url = try container.decode(String.self, forKey: .url)
+        url = try container.decodeIfPresent(String.self, forKey: .url)
+        urls = try container.decodeIfPresent([String].self, forKey: .urls)
         imageUrl = try container.decode(String.self, forKey: .imageUrl)
         let colourString = try container.decode(String.self, forKey: .backgroundColor).replacingOccurrences(of: "#", with: "").lowercased()
         backgroundColor = colourString == "fff" ? UIColor.white : UIColor(colorString: colourString)
@@ -33,6 +35,7 @@ private struct TopSite: Decodable {
     enum CodingKeys: String, CodingKey {
         case title
         case url
+        case urls
         case imageUrl = "image_url"
         case backgroundColor = "background_color"
         case domain

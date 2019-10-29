@@ -2,17 +2,20 @@
 
 import UIKit
 import Shared
-import SwiftyJSON
 
 class SyncDevice: SyncRecord {
     
     // MARK: Declaration for string constants to be used to decode and also serialize.
-    private struct SerializationKeys {
-        static let name = "name"
+    private enum SerializationKeys: String, CodingKey {
+        case name
     }
     
     // MARK: Properties
     var name: String?
+    
+    required init() {
+        super.init()
+    }
     
     required init(record: Syncable?, deviceId: [Int]?, action: Int?) {
         super.init(record: record, deviceId: deviceId, action: action)
@@ -24,12 +27,17 @@ class SyncDevice: SyncRecord {
         self.objectData = nil
     }
     
-    required init(json: JSON?) {
-        super.init(json: json)
-
-        self.name = json?[SyncObjectDataType.Device.rawValue][SerializationKeys.name].string
-
-        // Preference
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: SyncObjectDataType.self)
+        let innerContainer = try container.nestedContainer(keyedBy: SerializationKeys.self, forKey: .Device)
+        name = try innerContainer.decodeIfPresent(String.self, forKey: .name)
+        try super.init(from: container.superDecoder())
+    }
+    
+    override public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: SerializationKeys.self)
+        try container.encodeIfPresent(name, forKey: .name)
+        try super.encode(to: container.superEncoder())
         self.objectData = nil
     }
     
@@ -42,11 +50,10 @@ class SyncDevice: SyncRecord {
         
         // Device specific
         var deviceDict = [String: Any]()
-        if let value = self.name { deviceDict[SerializationKeys.name] = value }
+        if let value = self.name { deviceDict[SerializationKeys.name.rawValue] = value }
 
         var dictionary = super.dictionaryRepresentation()
         dictionary[SyncObjectDataType.Device.rawValue] = deviceDict
-        
         return dictionary
     }
 
